@@ -1,0 +1,6 @@
+{
+  "vendor/compiler/compiler.js": "33196508b9cb3c4c85f555a285bdb096d363d71b0988c5982e6e73120dac520f",
+  "vendor/compiler/compiler.wasm": "a5ce82e5cf74f493376c998073835dd5e3ca584a8f7a3d2e3b2df73952bef2a0",
+  "vendor/runtime/map-runtime.js": "f15a41d487160e3b2e9c3f397a2ba3da8f947a7bbe44740c513e1c283f3081d2",
+  "vendor/runtime/map-runtime.wasm": "2f74c110bc1c7e5e82928e85c90e75347985e3b37a173acb5f222ef920740094"
+}

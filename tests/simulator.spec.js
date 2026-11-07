@@ -1,0 +1,281 @@
+import { test, expect } from "@playwright/test";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+async function ready(page) {
+  await page.goto("/");
+  await expect(page.locator("#compile-status")).toContainText("Compiled", {
+    timeout: 30000,
+  });
+}
+async function setSource(page, text) {
+  await page.locator(".cm-content").click();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.insertText(text);
+}
+async function compile(page) {
+  await page.locator("#compile").click();
+  await expect(page.locator("#compile")).toBeEnabled({ timeout: 30000 });
+}
+async function moveToY(page, y) {
+  await page.locator("#viewport").focus();
+  await page.keyboard.down("w");
+  try {
+    await expect
+      .poll(() => page.evaluate(() => window.overfort.snapshot().player.y), {
+        timeout: 20000,
+        intervals: [100],
+      })
+      .toBeLessThan(y);
+  } finally {
+    await page.keyboard.up("w");
+  }
+}
+
+test("real WASM artifact embeds edited Verse, executes independently, and keyboard actions run its stateful handler", async ({
+  page,
+}) => {
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await ready(page);
+  const source = await page.evaluate(() => window.overfort.source());
+  await setSource(page, source.replace("Reward:int = 100", "Reward:int = 175"));
+  await compile(page);
+  await expect(page.locator("#compile-status")).toContainText("Compiled");
+  const wasm = Uint8Array.from(
+    await page.evaluate(() => Array.from(window.overfort.artifact())),
+  );
+  expect(WebAssembly.validate(wasm)).toBe(true);
+  const module = new WebAssembly.Module(wasm);
+  expect(
+    WebAssembly.Module.exports(module).some((e) => e.name === "map_run"),
+  ).toBe(true);
+  expect(
+    new TextDecoder().decode(
+      WebAssembly.Module.customSections(module, "overfort.source")[0],
+    ),
+  ).toContain("Reward:int = 175");
+  // Execute the actual downloadable map.wasm with its companion Emscripten host.
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "overfort-runtime-"));
+  const companion = path.join(temp, "map-runtime.cjs");
+  fs.copyFileSync("public/wasm/map-runtime.js", companion);
+  const runtimeFactory = require(companion);
+  let output = [];
+  const vm = await runtimeFactory({
+    wasmBinary: wasm,
+    print: (s) => output.push(s),
+    printErr: () => {},
+  });
+  expect(
+    vm.cwrap("map_run", "number", ["string", "number"])(
+      "interact:switch\ninteract:switch",
+      3000000,
+    ),
+  ).toBe(0);
+  expect(output.filter((s) => s === "@of\tscore\t175")).toHaveLength(1);
+  expect(output.join("\n")).toContain("already open");
+  fs.rmSync(temp, { recursive: true, force: true });
+  await moveToY(page, 6.8);
+  await expect(page.locator("#interaction")).toBeVisible();
+  await page.keyboard.press("e");
+  await expect(page.locator("#score")).toHaveText("175");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => window.overfort.snapshot().objects.find((o) => o.id === "gate").z,
+      ),
+    )
+    .toBeGreaterThan(4.2);
+  await page.keyboard.press("e");
+  await expect(page.locator("#message")).toContainText("already open");
+  await expect(page.locator("#score")).toHaveText("175");
+  await moveToY(page, -7.2);
+  await expect(page.locator("#trace")).toContainText("enter:garden");
+  await moveToY(page, -11.5);
+  await expect(page.locator("#victory")).toBeVisible();
+  await expect(page.locator("#score")).toHaveText("225");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          window.overfort.snapshot().objects.find((o) => o.id === "crystal")
+            .visible,
+      ),
+    )
+    .toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test("all starter maps compile, loop creates course, jump/launch and real aiming run in the browser", async ({
+  page,
+}) => {
+  await ready(page);
+  await page.locator('[data-map="parkour"]').click();
+  await expect(page.locator("#compile")).toBeEnabled();
+  await expect(page.locator("#map-name")).toHaveText("Skyline Sprint");
+  expect(
+    await page.evaluate(
+      () =>
+        window.overfort
+          .snapshot()
+          .objects.filter((o) => o.id.startsWith("step")).length,
+    ),
+  ).toBe(6);
+  await moveToY(page, -6.2);
+  await expect(page.locator("#trace")).toContainText("enter:launch");
+  await expect(page.locator("#victory")).toBeVisible();
+  await expect(page.locator("#score")).toHaveText("100");
+  await page.locator('[data-map="range"]').click();
+  await expect(page.locator("#compile")).toBeEnabled();
+  await expect(page.locator("#map-name")).toHaveText("Bot Yard");
+  const point = await page.evaluate(() => window.overfort.project("target2"));
+  await page.mouse.click(point.x, point.y);
+  await expect(page.locator("#score")).toHaveText("025");
+  await expect(page.locator("#trace")).toContainText("hit:target2");
+  for (let i = 2; i <= 4; i++) {
+    const next = await page.evaluate(() => window.overfort.project("target3"));
+    await page.mouse.click(next.x, next.y);
+    await expect(page.locator("#score")).toHaveText(
+      String(i * 25).padStart(3, "0"),
+    );
+  }
+  await expect(page.locator("#victory")).toBeVisible();
+  await expect(page.locator("#score")).toHaveText("100");
+  await page.locator("#keep-playing").click();
+  await page.locator("#restart").click();
+  await expect(page.locator("#score")).toHaveText("000");
+});
+
+test("compiler diagnostics and bounded loops preserve the previous world, edits persist, and recompilation recovers", async ({
+  page,
+}) => {
+  await ready(page);
+  const source = await page.evaluate(() => window.overfort.source());
+  await setSource(
+    page,
+    source.replace("GateHeight:int = 420", "GateHeight:int = UnknownHeight"),
+  );
+  await compile(page);
+  await expect(page.locator("#diagnostic")).toContainText("UnknownHeight");
+  await expect(page.locator("#diagnostic")).toContainText("island.verse:4:");
+  expect(
+    await page.evaluate(() => window.overfort.snapshot().objects.length),
+  ).toBe(10);
+  await setSource(
+    page,
+    `island := class(creative_device):\n    OnBegin<override>():void =\n        loop:\n            Print("still looping")\n`,
+  );
+  await compile(page);
+  await expect(page.locator("#diagnostic")).toContainText("limit");
+  await setSource(
+    page,
+    source
+      .replace('World("Switchback Island")', 'World("My edited island")')
+      .replace("GateHeight:int = 420", "GateHeight:int = 800"),
+  );
+  await compile(page);
+  await expect(page.locator("#map-name")).toHaveText("My edited island");
+  await expect(page.locator("#diagnostic")).toBeHidden();
+  expect(
+    await page.evaluate(
+      () =>
+        window.overfort.snapshot().objects.find((o) => o.id === "gate").height,
+    ),
+  ).toBe(8);
+  await page.reload();
+  await expect(page.locator("#compile-status")).toContainText("Compiled");
+  await expect(page.locator("#map-name")).toHaveText("My edited island");
+});
+
+test("mobile layout, touch movement, help, API and downloads", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await ready(page);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  const before = await page.evaluate(() => window.overfort.snapshot().player.y);
+  const button = page.locator('[data-key="KeyW"]');
+  const rect = await button.boundingBox();
+  await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(400);
+  await page.mouse.up();
+  expect(
+    await page.evaluate(() => window.overfort.snapshot().player.y),
+  ).toBeLessThan(before - 0.5);
+  await page.locator("#help").click();
+  await expect(page.locator("#modal")).toBeVisible();
+  await page.locator("#close-modal").click();
+  const downloadEvent = page.waitForEvent("download");
+  await page.locator("#wasm-download").click();
+  const d = await downloadEvent;
+  expect(d.suggestedFilename()).toBe("map.wasm");
+  const content = fs.readFileSync(await d.path());
+  expect(WebAssembly.validate(content)).toBe(true);
+  await page.screenshot({ path: "test-results/mobile.png", fullPage: true });
+});
+
+test("imported custom Verse changes geometry and failed conditions roll back WASM state and world output", async ({
+  page,
+}) => {
+  await ready(page);
+  const custom = `island := class(creative_device):
+    var Count:int = 0
+    OnBegin<override>():void =
+        World("Imported custom map")
+        PlayerSpawn(0, 300, 0)
+        Prop("block", "crate", 400, 0, 0, 200, 200, 400, "violet")
+        Button("test", 0, 200, 0, "Test rollback")
+    OnEvent<override>(Event:string):void =
+        if (Event = "interact:test"):
+            if (set Count += 1, Score(999), Count > 10):
+                Message("unreachable")
+            else:
+                Score(Count + 7)
+                Message("Count after rollback: {Count}")
+`;
+  await page.locator("#source-file").setInputFiles({
+    name: "custom.verse",
+    mimeType: "text/plain",
+    buffer: Buffer.from(custom),
+  });
+  await compile(page);
+  await expect(page.locator("#map-name")).toHaveText("Imported custom map");
+  expect(
+    await page.evaluate(
+      () => window.overfort.snapshot().objects.find((o) => o.id === "block").x,
+    ),
+  ).toBe(4);
+  await page.locator("#viewport").focus();
+  await page.keyboard.press("e");
+  await expect(page.locator("#score")).toHaveText("007");
+  await expect(page.locator("#message")).toContainText(
+    "Count after rollback: 0",
+  );
+  await page.keyboard.press("e");
+  await expect(page.locator("#score")).toHaveText("014");
+  // A syntactically valid map with invalid world output must not replace the working VM.
+  await setSource(
+    page,
+    custom.replace(
+      'Prop("block", "crate", 400, 0, 0, 200, 200, 400',
+      'Prop("block", "crate", 400, 0, 0, -200, 200, 400',
+    ),
+  );
+  await compile(page);
+  await expect(page.locator("#diagnostic")).toContainText(
+    "positive dimensions",
+  );
+  await page.locator("#viewport").focus();
+  await page.keyboard.press("e");
+  await expect(page.locator("#score")).toHaveText("021");
+  await page.locator("#restore-example").click();
+  await expect(page.locator("#compile")).toBeEnabled();
+  await expect(page.locator("#map-name")).toHaveText("Switchback Island");
+});

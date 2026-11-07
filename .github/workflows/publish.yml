@@ -1,0 +1,83 @@
+name: Build, test, and publish
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - run: npm test
+      - run: npm run build
+      - name: Upload tested site
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  pages:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: read
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - name: Check Pages publishing source
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" > pages.json 2>pages-error.txt; then
+            if jq -e '.build_type == "workflow"' pages.json > /dev/null; then
+              echo 'enabled=true' >> "$GITHUB_OUTPUT"
+            else
+              echo 'enabled=false' >> "$GITHUB_OUTPUT"
+              echo 'Select GitHub Actions as the Pages publishing source in repository Settings → Pages.' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          elif grep -q 'HTTP 404' pages-error.txt; then
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo "Build and browser tests passed. Enable GitHub Pages using GitHub Actions at https://github.com/${GITHUB_REPOSITORY}/settings/pages, then rerun this workflow." >> "$GITHUB_STEP_SUMMARY"
+          else
+            cat pages-error.txt >&2
+            exit 1
+          fi
+
+  deploy:
+    if: needs.pages.outputs.enabled == 'true'
+    needs: [build, pages]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy tested site
+        id: deployment
+        uses: actions/deploy-pages@v4

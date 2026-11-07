@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <meta name="theme-color" content="#121826" />
+    <meta
+      name="description"
+      content="Write Verse. Compile to WebAssembly. Step inside your code. A single-player creative island lab."
+    />
+    <title>Overfort Sim — Step inside your Verse</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23cafa4c'/%3E%3Cpath d='m20 5 12 8v14l-12 8-12-8V13zm0 8-6 4v6l6 4 6-4v-6z' fill='%23121826'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Overfort Sim home"
+        ><span class="brand-icon">◈</span
+        ><span>OVERFORT<span class="brand-sub">SIM</span></span></a
+      >
+      <span class="header-divider"></span
+      ><span class="tagline">STEP INSIDE YOUR VERSE.</span>
+      <div class="top-right">
+        <span class="local-badge"><i></i> LOCAL PLAYGROUND</span
+        ><button id="help" class="quiet-button">
+          How to play <span>?</span>
+        </button>
+      </div>
+    </header>
+    <main class="workspace">
+      <aside class="rail" aria-label="Workspace views">
+        <button
+          class="rail-item active"
+          id="islands-nav"
+          aria-label="Choose an island"
+        >
+          ▧<small>ISLANDS</small></button
+        ><button
+          class="rail-item"
+          id="api-nav"
+          aria-label="Open simulator API reference"
+        >
+          ⌘<small>API</small></button
+        ><button
+          class="rail-item"
+          id="download-nav"
+          aria-label="Download Verse source"
+        >
+          ↓<small>EXPORT</small></button
+        ><span class="rail-bottom">v0.1<br />LAB</span>
+      </aside>
+      <section class="play-column">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">YOUR CREATIVE SANDBOX</span>
+            <h1>Small changes. <em>Whole new worlds.</em></h1>
+          </div>
+          <span class="single-player">♙ &nbsp; 1 PLAYER + BOTS</span>
+        </div>
+        <div class="map-tabs" role="group" aria-label="Starter islands"></div>
+        <section class="game-panel" aria-label="Playable 3D map">
+          <div
+            id="viewport"
+            tabindex="0"
+            aria-label="3D island. WASD to move, space to jump, E to interact. Click and drag to look."
+          ></div>
+          <div class="game-top">
+            <div class="location">
+              <span class="live-dot"></span>
+              <div>
+                <small>LIVE SESSION</small
+                ><strong id="map-name">Switchback Island</strong>
+              </div>
+            </div>
+            <div class="mini-map">
+              <canvas
+                id="minimap"
+                width="130"
+                height="130"
+                aria-label="Island minimap"
+              ></canvas
+              ><span>N</span>
+            </div>
+          </div>
+          <div id="loading" class="world-loading">
+            <span class="spinner"></span><strong>Preparing your island</strong
+            ><small id="loading-phase">Starting WebAssembly</small>
+          </div>
+          <div id="play-hint" class="play-hint">
+            <span>↗</span> Click the world to explore
+            <small>WASD move · drag to look · E interact</small>
+          </div>
+          <div id="interaction" class="interaction" hidden>
+            <kbd>E</kbd><span></span>
+          </div>
+          <div id="message" class="world-message" role="status"></div>
+          <div id="victory" class="victory" hidden>
+            <span>✦</span><small>EXPERIMENT COMPLETE</small><strong></strong
+            ><button id="keep-playing">Keep exploring →</button>
+          </div>
+          <div class="crosshair"><i></i><i></i></div>
+          <div class="game-bottom">
+            <div class="player-hud">
+              <span class="player-avatar">♙</span>
+              <div>
+                <strong>YOU <small>EXPLORER</small></strong>
+                <div class="shield-bar"></div>
+                <div class="health-bar"></div>
+                <small>100 &nbsp;♥ &nbsp; 100</small>
+              </div>
+            </div>
+            <div class="score-hud">
+              <small>ISLAND SCORE</small><strong id="score">000</strong>
+            </div>
+            <button
+              id="fullscreen"
+              class="world-control"
+              aria-label="Toggle fullscreen"
+            >
+              ⛶</button
+            ><button
+              id="restart"
+              class="world-control"
+              title="Restart this map"
+              aria-label="Restart map"
+            >
+              ↻
+            </button>
+          </div>
+          <div class="touch-controls">
+            <button data-key="KeyW" aria-label="Move forward">↑</button>
+            <div>
+              <button data-key="KeyA" aria-label="Move left">←</button
+              ><button data-key="KeyS" aria-label="Move back">↓</button
+              ><button data-key="KeyD" aria-label="Move right">→</button>
+            </div>
+            <button data-key="Space" aria-label="Jump">JUMP</button
+            ><button data-action="interact" aria-label="Interact">E</button
+            ><button data-action="shoot" aria-label="Fire">FIRE</button>
+          </div>
+        </section>
+        <div class="controls-strip">
+          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</span
+          ><span><kbd>SPACE</kbd> Jump</span><span><kbd>E</kbd> Interact</span
+          ><span
+            ><span class="mouse-icon">↔</span> Drag to look · Click to
+            fire</span
+          ><button id="inspect-toggle" class="inspect-button">
+            ⌖ Inspect objects
+          </button>
+        </div>
+        <section class="lesson">
+          <span class="lesson-icon">✧</span>
+          <div>
+            <span class="eyebrow">TRY THIS</span>
+            <p id="lesson-text"></p>
+          </div>
+        </section>
+        <section class="trace-panel">
+          <div class="trace-header">
+            <span><i></i> EVENT TRACE <small>WORLD → VERSE → WORLD</small></span
+            ><button id="clear-trace">Clear</button>
+          </div>
+          <div id="trace" role="log" aria-label="Verse execution trace">
+            <div class="trace-empty">
+              Your interactions will appear here. Every reaction runs through
+              WASM.
+            </div>
+          </div>
+        </section>
+      </section>
+      <section class="editor-column" aria-label="Verse code editor">
+        <div class="editor-top">
+          <span class="file-tab"
+            ><span>V</span> island.verse <i id="dirty" hidden></i></span
+          ><span class="language-label">VERSE</span
+          ><button
+            id="source-import"
+            aria-label="Import Verse source"
+            title="Import a .verse map"
+          >
+            ↑</button
+          ><input
+            id="source-file"
+            type="file"
+            accept=".verse,.txt,text/plain"
+            hidden
+          /><button
+            id="source-download"
+            aria-label="Download Verse source"
+            title="Download source"
+          >
+            ↓
+          </button>
+        </div>
+        <div class="editor-description">
+          <div class="editor-title">
+            <strong>Your code. Your island.</strong
+            ><button id="restore-example">Restore starter</button>
+          </div>
+          <p>Edit a value or rewrite the rules. Then bring it to life.</p>
+        </div>
+        <div id="editor" aria-label="Verse source code"></div>
+        <div id="diagnostic" class="diagnostic" role="alert" hidden></div>
+        <div class="compile-bar">
+          <div>
+            <span id="compile-status" role="status">Starting compiler…</span
+            ><small id="artifact-info">Verse → OVBC → linked WebAssembly</small>
+          </div>
+          <button id="compile" disabled>
+            ▶ &nbsp;Compile & play <kbd>⌘ ↵</kbd>
+          </button>
+        </div>
+        <div class="editor-footer">
+          <span><i></i> Runs in your browser</span
+          ><button id="wasm-download" disabled>Download .wasm ↓</button>
+        </div>
+      </section>
+    </main>
+    <footer class="page-footer">
+      <span>BUILD. BREAK. UNDERSTAND.</span
+      ><span
+        >An independent Verse learning toy · Original visuals ·
+        <button id="limitations">Simulator scope</button></span
+      ><span class="wasm-badge">WASM POWERED ↗</span>
+    </footer>
+    <dialog id="modal">
+      <button id="close-modal" class="close-modal" aria-label="Close dialog">
+        ×
+      </button>
+      <div id="modal-content"></div>
+    </dialog>
+    <script type="module" src="/web/app.js"></script>
+  </body>
+</html>
