@@ -10,7 +10,9 @@ OUT.mkdir(parents=True, exist_ok=True)
 for name in ('compiler.js', 'compiler.wasm'):
     shutil.copyfile(ROOT / 'vendor/compiler' / name, OUT / name)
 VM = ROOT / 'vendor/openverse/runtime'
-sources = [VM / 'src' / (name + '.c') for name in ('arith', 'store', 'load', 'value', 'objects', 'prims', 'interp')]
+# Every vendored VM source but the native command line (main.c), so that a new
+# runtime file (floats.c, say) needs no change here.
+sources = sorted(p for p in (VM / 'src').glob('*.c') if p.name != 'main.c')
 cmd = ['emcc', '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-I' + str(VM / 'include'), *map(str, sources), str(ROOT / 'wasm/map-runtime.c'),
        '-sMODULARIZE=1', '-sEXPORT_NAME=OpenfortRuntime', '-sENVIRONMENT=web,worker,node',
        '-sALLOW_MEMORY_GROWTH=1', '-sINITIAL_MEMORY=33554432', '-sMAXIMUM_MEMORY=268435456',
