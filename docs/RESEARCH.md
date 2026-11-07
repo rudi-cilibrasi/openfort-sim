@@ -33,7 +33,7 @@ compiled with Emscripten, and a separate C bytecode VM compiled to WASM. Its
 service worker accepts a source file, produces OVBC, copies it into the VM, and
 returns output. It has no graphics or game input APIs.
 
-Overfort reuses the actual compiler and VM sources, replaces the text-only
+Openfort reuses the actual compiler and VM sources, replaces the text-only
 adapter with an embedded-map runtime, adds a WASM linker, and uses a dedicated
 worker so compilation can be terminated by a watchdog. Its world protocol is
 implemented in Verse, preserving the real compiler's parsing, type checking,

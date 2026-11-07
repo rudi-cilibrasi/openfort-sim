@@ -1,4 +1,4 @@
-# Overfort simulator API. Integer coordinates/sizes are centimeters.
+# Openfort simulator API. Integer coordinates/sizes are centimeters.
 # This is a teaching API, not Epic's Fortnite device SDK.
 OFEvents():[]string = array{}
 creative_device := class:

@@ -69,7 +69,7 @@ onmessage = (e) => {
         }
         if (size > 512 * 1024) throw new Error("Compiled map exceeds 512 KiB.");
         phase("Linking map.wasm");
-        const base = await OverfortRuntime({
+        const base = await OpenfortRuntime({
           wasmBinary: runtimeBytes,
           print: () => {},
           printErr: () => {},
@@ -81,7 +81,7 @@ onmessage = (e) => {
           bytecode,
           source,
         );
-        const nextVm = await OverfortRuntime({
+        const nextVm = await OpenfortRuntime({
           wasmBinary: next,
           print: (t) => lines.push(t),
           printErr: (t) => errors.push(t),

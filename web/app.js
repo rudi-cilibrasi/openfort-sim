@@ -4,16 +4,23 @@ import { examples } from "./examples.js";
 import { createEditor } from "./editor.js";
 import api from "./sim-api.verse?raw";
 const $ = (s) => document.querySelector(s);
+// Read earlier browser drafts without losing edits when the app name changes.
+// All current storage writes use the Openfort namespace below.
+const LEGACY_STORAGE_PREFIX = "overfort:";
 const stored = (key) => {
   try {
-    return localStorage.getItem("overfort:" + key);
+    const current = localStorage.getItem("openfort:" + key);
+    if (current !== null) return current;
+    const previous = localStorage.getItem(LEGACY_STORAGE_PREFIX + key);
+    if (previous !== null) save(key, previous);
+    return previous;
   } catch {
     return null;
   }
 };
 const save = (key, value) => {
   try {
-    localStorage.setItem("overfort:" + key, value);
+    localStorage.setItem("openfort:" + key, value);
   } catch {}
 };
 let selected = stored("selected") in examples ? stored("selected") : "island";
@@ -379,7 +386,7 @@ function modal(html) {
   $("#modal").showModal();
   world.keys.clear();
 }
-const scope = `<h2>A small world for learning Verse.</h2><p>Overfort Sim is an independent, single-player learning toy with original low-poly visuals inspired by creative island games. Only local bots appear. No Epic assets, accounts, network players, or Fortnite installation are used.</p><h3>What actually compiles</h3><p>The pinned OpenVerse compiler runs in WebAssembly. It parses and type-checks your complete map plus the simulator API to OVBC. The browser then links that bytecode into a WebAssembly build of the OpenVerse C VM. The resulting <code>map.wasm</code> embeds your program and exports <code>map_run</code>. This is a VM-based executable WASM artifact; it does not compile each Verse operation into a native WASM instruction.</p><h3>Simulator API and language coverage</h3><p>This is OpenVerse's integer-based Verse subset, with classes, mutable state, loops, conditions, and transactional failure. It does not run arbitrary UEFN projects or Epic's device SDK. Floats, <code>@editable</code>, <code>Subscribe</code> callbacks, <code>spawn</code>, <code>Sleep</code>, and concurrency are not implemented. Use <code>OnEvent</code> for this toy's input events. Bot movement and physics are local JavaScript/Three.js simulation; map construction and reaction logic execute inside WASM.</p><p>To keep Verse state deterministic, each input replays the event history in WASM. Only new world commands are applied. Sessions allow 256 events, 400 objects, 64 KiB of source, and a bounded evaluator budget. Restart clears the event history.</p><h3>Research behind the design</h3><p>Epic places Verse-authored <a href="https://dev.epicgames.com/documentation/fortnite/verse-api/fortnitedotcom/devices/creative_device" target="_blank" rel="noreferrer">creative devices</a> in an island and starts them with <code>OnBegin</code>. <a href="https://dev.epicgames.com/documentation/en-us/fortnite/coding-device-interactions-in-verse" target="_blank" rel="noreferrer">Device interactions</a> connect events to Verse handlers; <a href="https://dev.epicgames.com/documentation/en-us/fortnite/editable-properties-in-verse" target="_blank" rel="noreferrer">editable properties</a> configure the devices. Here, explicit simulator functions and OnEvent routing let you explore the same cause-and-effect pattern in a browser.</p>`;
+const scope = `<h2>A small world for learning Verse.</h2><p>Openfort Sim is an independent, single-player learning toy with original low-poly visuals inspired by creative island games. Only local bots appear. No Epic assets, accounts, network players, or Fortnite installation are used.</p><h3>What actually compiles</h3><p>The pinned OpenVerse compiler runs in WebAssembly. It parses and type-checks your complete map plus the simulator API to OVBC. The browser then links that bytecode into a WebAssembly build of the OpenVerse C VM. The resulting <code>map.wasm</code> embeds your program and exports <code>map_run</code>. This is a VM-based executable WASM artifact; it does not compile each Verse operation into a native WASM instruction.</p><h3>Simulator API and language coverage</h3><p>This is OpenVerse's integer-based Verse subset, with classes, mutable state, loops, conditions, and transactional failure. It does not run arbitrary UEFN projects or Epic's device SDK. Floats, <code>@editable</code>, <code>Subscribe</code> callbacks, <code>spawn</code>, <code>Sleep</code>, and concurrency are not implemented. Use <code>OnEvent</code> for this toy's input events. Bot movement and physics are local JavaScript/Three.js simulation; map construction and reaction logic execute inside WASM.</p><p>To keep Verse state deterministic, each input replays the event history in WASM. Only new world commands are applied. Sessions allow 256 events, 400 objects, 64 KiB of source, and a bounded evaluator budget. Restart clears the event history.</p><h3>Research behind the design</h3><p>Epic places Verse-authored <a href="https://dev.epicgames.com/documentation/fortnite/verse-api/fortnitedotcom/devices/creative_device" target="_blank" rel="noreferrer">creative devices</a> in an island and starts them with <code>OnBegin</code>. <a href="https://dev.epicgames.com/documentation/en-us/fortnite/coding-device-interactions-in-verse" target="_blank" rel="noreferrer">Device interactions</a> connect events to Verse handlers; <a href="https://dev.epicgames.com/documentation/en-us/fortnite/editable-properties-in-verse" target="_blank" rel="noreferrer">editable properties</a> configure the devices. Here, explicit simulator functions and OnEvent routing let you explore the same cause-and-effect pattern in a browser.</p>`;
 function apiModal() {
   const rows = [
     [
@@ -564,7 +571,7 @@ try {
     btn.onpointercancel = release;
   }
   // Read-only diagnostics for browser verification and local debugging.
-  window.overfort = {
+  window.openfort = {
     snapshot: () => ({
       ...world.snapshot(),
       compiledSource,

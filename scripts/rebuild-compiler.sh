@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
-DEMO_PATH="${OVERFORT_DEMO_PATH:-../openverse-online-demo}"
+DEMO_PATH="${OPENFORT_DEMO_PATH:-../openverse-online-demo}"
 python3 - "$DEMO_PATH" <<'PY'
 import json
 import sys

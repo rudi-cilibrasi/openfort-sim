@@ -1,4 +1,4 @@
-# Overfort Sim
+# Openfort Sim
 
 **Write Verse. Compile to WebAssembly. Step inside your code.**
 
@@ -8,7 +8,6 @@ borrow the bright, low-poly creative-island feel. Other characters are local
 bots. There is no multiplayer, account, cloud compiler, or external asset CDN.
 
 Source: [rudi-cilibrasi/openfort-sim](https://github.com/rudi-cilibrasi/openfort-sim).
-The application name remains **Overfort Sim**.
 
 Play the [3D simulator](https://rudi-cilibrasi.github.io/openverse-docs/sim/),
 or switch to the [text playground](https://rudi-cilibrasi.github.io/openverse-docs/demo/)
@@ -101,7 +100,7 @@ WASM executes Verse → validated world commands → Three.js scene
 **Each map is an executable WebAssembly module containing its compiled program.**
 This is a VM-based WASM target, not direct ahead-of-time lowering of every Verse
 operation to WASM instructions. The downloaded file has a WASM header, executable
-runtime code, embedded OVBC, and an `overfort.source` custom section containing
+runtime code, embedded OVBC, and an `openfort.source` custom section containing
 its source. Its `map_run` export actually runs that embedded program. The tests
 instantiate the downloaded artifact independently and execute its stateful
 handler, as well as exercising the normal browser controls.

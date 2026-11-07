@@ -24,7 +24,7 @@ async function moveToY(page, y) {
   await page.keyboard.down("w");
   try {
     await expect
-      .poll(() => page.evaluate(() => window.overfort.snapshot().player.y), {
+      .poll(() => page.evaluate(() => window.openfort.snapshot().player.y), {
         timeout: 20000,
         intervals: [100],
       })
@@ -34,18 +34,52 @@ async function moveToY(page, y) {
   }
 }
 
+test("Openfort preserves earlier saved Verse drafts and keeps newer edits on reload", async ({
+  page,
+}) => {
+  const saved = fs
+    .readFileSync("examples/switchback-island.verse", "utf8")
+    .replace('World("Switchback Island")', 'World("My saved island")');
+  await page.addInitScript((source) => {
+    localStorage.setItem("overfort:selected", "island");
+    localStorage.setItem("overfort:source:island", source);
+  }, saved);
+  await ready(page);
+  await expect(page).toHaveTitle("Openfort Sim — Step inside your Verse");
+  await expect(
+    page.getByRole("link", { name: "Openfort Sim home" }),
+  ).toBeVisible();
+  await expect(page.locator("#map-name")).toHaveText("My saved island");
+  expect(await page.evaluate(() => openfort.source())).toBe(saved);
+  expect(
+    await page.evaluate(() => localStorage.getItem("openfort:source:island")),
+  ).toBe(saved);
+
+  const edited = saved.replace("Reward:int = 100", "Reward:int = 200");
+  await setSource(page, edited);
+  await page.reload();
+  await expect(page.locator("#compile-status")).toContainText("Compiled", {
+    timeout: 30000,
+  });
+  // The earlier storage entry must not overwrite the newer Openfort draft.
+  expect(await page.evaluate(() => openfort.source())).toBe(edited);
+  expect(
+    await page.evaluate(() => localStorage.getItem("openfort:source:island")),
+  ).toBe(edited);
+});
+
 test("real WASM artifact embeds edited Verse, executes independently, and keyboard actions run its stateful handler", async ({
   page,
 }) => {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await ready(page);
-  const source = await page.evaluate(() => window.overfort.source());
+  const source = await page.evaluate(() => window.openfort.source());
   await setSource(page, source.replace("Reward:int = 100", "Reward:int = 175"));
   await compile(page);
   await expect(page.locator("#compile-status")).toContainText("Compiled");
   const wasm = Uint8Array.from(
-    await page.evaluate(() => Array.from(window.overfort.artifact())),
+    await page.evaluate(() => Array.from(window.openfort.artifact())),
   );
   expect(WebAssembly.validate(wasm)).toBe(true);
   const module = new WebAssembly.Module(wasm);
@@ -54,11 +88,11 @@ test("real WASM artifact embeds edited Verse, executes independently, and keyboa
   ).toBe(true);
   expect(
     new TextDecoder().decode(
-      WebAssembly.Module.customSections(module, "overfort.source")[0],
+      WebAssembly.Module.customSections(module, "openfort.source")[0],
     ),
   ).toContain("Reward:int = 175");
   // Execute the actual downloadable map.wasm with its companion Emscripten host.
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "overfort-runtime-"));
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "openfort-runtime-"));
   const companion = path.join(temp, "map-runtime.cjs");
   fs.copyFileSync("public/wasm/map-runtime.js", companion);
   const runtimeFactory = require(companion);
@@ -84,7 +118,7 @@ test("real WASM artifact embeds edited Verse, executes independently, and keyboa
   await expect
     .poll(() =>
       page.evaluate(
-        () => window.overfort.snapshot().objects.find((o) => o.id === "gate").z,
+        () => window.openfort.snapshot().objects.find((o) => o.id === "gate").z,
       ),
     )
     .toBeGreaterThan(4.2);
@@ -100,7 +134,7 @@ test("real WASM artifact embeds edited Verse, executes independently, and keyboa
     .poll(() =>
       page.evaluate(
         () =>
-          window.overfort.snapshot().objects.find((o) => o.id === "crystal")
+          window.openfort.snapshot().objects.find((o) => o.id === "crystal")
             .visible,
       ),
     )
@@ -118,13 +152,13 @@ test("edits are visibly pending and the restart circle applies a changed gate ha
   expect(action.y + action.height).toBeLessThan(720);
   expect(action.y).toBeLessThan(code.y);
 
-  const source = await page.evaluate(() => window.overfort.source());
+  const source = await page.evaluate(() => window.openfort.source());
   await moveToY(page, 6.8);
   await page.keyboard.press("e");
   await expect
     .poll(() =>
       page.evaluate(
-        () => overfort.snapshot().objects.find((o) => o.id === "gate").z,
+        () => openfort.snapshot().objects.find((o) => o.id === "gate").z,
       ),
     )
     .toBeGreaterThan(4.2);
@@ -145,7 +179,7 @@ test("edits are visibly pending and the restart circle applies a changed gate ha
   await expect(page.locator("#compile")).toBeEnabled({ timeout: 30000 });
   await expect(page.locator("#pending-edits")).toBeHidden();
   await expect(page.locator("#dirty")).toBeHidden();
-  expect(await page.evaluate(() => overfort.snapshot().compiledSource)).toBe(
+  expect(await page.evaluate(() => openfort.snapshot().compiledSource)).toBe(
     closed,
   );
   await moveToY(page, 6.8);
@@ -153,7 +187,7 @@ test("edits are visibly pending and the restart circle applies a changed gate ha
   await expect(page.locator("#message")).toHaveText("The gate stays closed.");
   expect(
     await page.evaluate(
-      () => overfort.snapshot().objects.find((o) => o.id === "gate").z,
+      () => openfort.snapshot().objects.find((o) => o.id === "gate").z,
     ),
   ).toBe(0);
 
@@ -167,7 +201,7 @@ test("edits are visibly pending and the restart circle applies a changed gate ha
   await expect(page.locator("#pending-edits")).toContainText(
     "previous map is still running",
   );
-  expect(await page.evaluate(() => overfort.snapshot().compiledSource)).toBe(
+  expect(await page.evaluate(() => openfort.snapshot().compiledSource)).toBe(
     closed,
   );
 
@@ -181,7 +215,7 @@ test("edits are visibly pending and the restart circle applies a changed gate ha
   await expect
     .poll(() =>
       page.evaluate(
-        () => overfort.snapshot().objects.find((o) => o.id === "gate").z,
+        () => openfort.snapshot().objects.find((o) => o.id === "gate").z,
       ),
     )
     .toBeGreaterThan(4.2);
@@ -197,7 +231,7 @@ test("all starter maps compile, loop creates course, jump/launch and real aiming
   expect(
     await page.evaluate(
       () =>
-        window.overfort
+        window.openfort
           .snapshot()
           .objects.filter((o) => o.id.startsWith("step")).length,
     ),
@@ -209,12 +243,12 @@ test("all starter maps compile, loop creates course, jump/launch and real aiming
   await page.locator('[data-map="range"]').click();
   await expect(page.locator("#compile")).toBeEnabled();
   await expect(page.locator("#map-name")).toHaveText("Bot Yard");
-  const point = await page.evaluate(() => window.overfort.project("target2"));
+  const point = await page.evaluate(() => window.openfort.project("target2"));
   await page.mouse.click(point.x, point.y);
   await expect(page.locator("#score")).toHaveText("025");
   await expect(page.locator("#trace")).toContainText("hit:target2");
   for (let i = 2; i <= 4; i++) {
-    const next = await page.evaluate(() => window.overfort.project("target3"));
+    const next = await page.evaluate(() => window.openfort.project("target3"));
     await page.mouse.click(next.x, next.y);
     await expect(page.locator("#score")).toHaveText(
       String(i * 25).padStart(3, "0"),
@@ -231,7 +265,7 @@ test("compiler diagnostics and bounded loops preserve the previous world, edits 
   page,
 }) => {
   await ready(page);
-  const source = await page.evaluate(() => window.overfort.source());
+  const source = await page.evaluate(() => window.openfort.source());
   await setSource(
     page,
     source.replace("GateHeight:int = 420", "GateHeight:int = UnknownHeight"),
@@ -240,7 +274,7 @@ test("compiler diagnostics and bounded loops preserve the previous world, edits 
   await expect(page.locator("#diagnostic")).toContainText("UnknownHeight");
   await expect(page.locator("#diagnostic")).toContainText("island.verse:4:");
   expect(
-    await page.evaluate(() => window.overfort.snapshot().objects.length),
+    await page.evaluate(() => window.openfort.snapshot().objects.length),
   ).toBe(10);
   await setSource(
     page,
@@ -260,7 +294,7 @@ test("compiler diagnostics and bounded loops preserve the previous world, edits 
   expect(
     await page.evaluate(
       () =>
-        window.overfort.snapshot().objects.find((o) => o.id === "gate").height,
+        window.openfort.snapshot().objects.find((o) => o.id === "gate").height,
     ),
   ).toBe(8);
   await page.reload();
@@ -278,7 +312,7 @@ test("mobile layout, touch movement, help, API and downloads", async ({
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  const before = await page.evaluate(() => window.overfort.snapshot().player.y);
+  const before = await page.evaluate(() => window.openfort.snapshot().player.y);
   const button = page.locator('[data-key="KeyW"]');
   const rect = await button.boundingBox();
   await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
@@ -286,7 +320,7 @@ test("mobile layout, touch movement, help, API and downloads", async ({
   await page.waitForTimeout(400);
   await page.mouse.up();
   expect(
-    await page.evaluate(() => window.overfort.snapshot().player.y),
+    await page.evaluate(() => window.openfort.snapshot().player.y),
   ).toBeLessThan(before - 0.5);
   await page.locator("#help").click();
   await expect(page.locator("#modal")).toBeVisible();
@@ -328,7 +362,7 @@ test("imported custom Verse changes geometry and failed conditions roll back WAS
   await expect(page.locator("#map-name")).toHaveText("Imported custom map");
   expect(
     await page.evaluate(
-      () => window.overfort.snapshot().objects.find((o) => o.id === "block").x,
+      () => window.openfort.snapshot().objects.find((o) => o.id === "block").x,
     ),
   ).toBe(4);
   await page.locator("#viewport").focus();

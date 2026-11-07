@@ -63,4 +63,4 @@ Use an empty history to run OnBegin alone. Each invocation has fresh Verse
 state and executes the supplied history. Output contains `@of` commands and
 `@of\tboundary` separators. Exit 0 means success; nonzero results are errors
 and suppress partial world output. Read the source with
-`WebAssembly.Module.customSections(module, 'overfort.source')`.
+`WebAssembly.Module.customSections(module, 'openfort.source')`.

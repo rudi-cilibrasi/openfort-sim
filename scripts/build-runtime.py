@@ -12,7 +12,7 @@ for name in ('compiler.js', 'compiler.wasm'):
 VM = ROOT / 'vendor/openverse/runtime'
 sources = [VM / 'src' / (name + '.c') for name in ('arith', 'store', 'load', 'value', 'objects', 'prims', 'interp')]
 cmd = ['emcc', '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-I' + str(VM / 'include'), *map(str, sources), str(ROOT / 'wasm/map-runtime.c'),
-       '-sMODULARIZE=1', '-sEXPORT_NAME=OverfortRuntime', '-sENVIRONMENT=web,worker,node',
+       '-sMODULARIZE=1', '-sEXPORT_NAME=OpenfortRuntime', '-sENVIRONMENT=web,worker,node',
        '-sALLOW_MEMORY_GROWTH=1', '-sINITIAL_MEMORY=33554432', '-sMAXIMUM_MEMORY=268435456',
        '-sTOTAL_STACK=16777216', '-sEXPORTED_RUNTIME_METHODS=["cwrap"]',
        '-sEXPORTED_FUNCTIONS=["_map_run","_map_program_ptr","_map_program_capacity","_malloc","_free"]',

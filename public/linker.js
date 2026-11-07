@@ -74,7 +74,7 @@ export function linkMap(runtime, address, bytecode, source) {
     chunks.push(section(id, data));
   }
   if (!hasData) chunks.push(section(11, new Uint8Array([1, ...segment])));
-  const name = new TextEncoder().encode("overfort.source");
+  const name = new TextEncoder().encode("openfort.source");
   const text = new TextEncoder().encode(source);
   const meta = new Uint8Array(
     uleb(name.length).length + name.length + text.length,
