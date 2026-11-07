@@ -902,6 +902,9 @@ export class World {
     return ray;
   }
   hitObject(e) {
+    // A newly compiled map can receive a click before its first render.
+    this.mapGroup.updateMatrixWorld(true);
+    this.camera.updateMatrixWorld();
     const hits = this.rayAt(e).intersectObjects(
       [...this.objects.values()]
         .filter((o) => o.group.visible)
