@@ -10,6 +10,12 @@ bots. There is no multiplayer, account, cloud compiler, or external asset CDN.
 Source: [rudi-cilibrasi/openfort-sim](https://github.com/rudi-cilibrasi/openfort-sim).
 The application name remains **Overfort Sim**.
 
+Play the [3D simulator](https://rudi-cilibrasi.github.io/openverse-docs/sim/),
+or switch to the [text playground](https://rudi-cilibrasi.github.io/openverse-docs/demo/)
+to explore the same Verse language through printed output. Both are introduced
+on the [OpenVerse docs landing page](https://rudi-cilibrasi.github.io/openverse-docs/).
+Each toy supplies its own examples and API.
+
 ## Run locally
 
 Requires Node.js 20.19+ or 22.12+ and npm. In this repository:
@@ -37,7 +43,11 @@ Nothing is published by these commands.
 
 ## Public browser hosting
 
-The GitHub Actions workflow builds and tests every push to `main`. When GitHub
+The OpenVerse docs site pins this repository as its `sim/` submodule and publishes
+the built simulator at https://rudi-cilibrasi.github.io/openverse-docs/sim/ beside
+the text playground. Its deployment checks both toys before publishing.
+
+This repository's GitHub Actions workflow also builds and tests every push to `main`. When GitHub
 Pages is enabled with **GitHub Actions** as its publishing source, it also
 deploys the verified build to https://rudi-cilibrasi.github.io/openfort-sim/.
 Enable that source in **Settings → Pages**, then run the **Build, test, and
