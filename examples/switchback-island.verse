@@ -34,7 +34,7 @@ island := class(creative_device):
                 Message("The gate is already open. Try changing the code.")
         if (Event = "enter:garden"):
             Trace(37, "OnEvent → enter:garden")
-            Message("Trigger entered. Your movement just ran Verse!")
+            Message("You reached the garden.")
         if (Event = "collect:crystal"):
             Hide("crystal")
             Score(50)

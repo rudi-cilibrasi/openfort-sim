@@ -24,7 +24,7 @@ island := class(creative_device):
         if (Event = "enter:finish"):
             Trace(26, "enter:finish → Score")
             Score(100)
-            Message("You landed on a Verse-generated platform.")
+            Message("You made it to the high platform!")
         if (Event = "collect:star"):
             Hide("star")
             Finish("Course complete. Change Steps and try again!")
