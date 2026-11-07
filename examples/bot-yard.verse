@@ -15,14 +15,14 @@ island := class(creative_device):
         Bot("Dash", -600, -100, 0, "patrol")
         Bot("Echo", 700, -400, 0, "wander")
         Button("reset", 850, 900, 0, "Reset hit counter")
-        Message("Aim at bots or targets and click to fire. Every hit runs Verse.")
+        Message("Aim at bots or targets and click to fire.")
 
     OnEvent<override>(Event:string):void =
         if (Event = "hit:Dash" or Event = "hit:Echo" or Event = "hit:target1" or Event = "hit:target2" or Event = "hit:target3"):
             Trace(23, "hit event → counter + condition")
             set Hits += 1
             Score(PointsPerHit)
-            Message("Hit {Hits}/{HitsToWin}. This counter lives in Verse.")
+            Message("Hit {Hits}/{HitsToWin}.")
             if (Hits >= HitsToWin):
                 Finish("Practice complete! The victory condition is yours to edit.")
         if (Event = "interact:reset"):
