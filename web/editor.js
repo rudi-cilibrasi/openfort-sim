@@ -9,7 +9,7 @@ import {
 } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 const verseColors = HighlightStyle.define([
-  { tag: tags.comment, color: "#71849e" },
+  { tag: tags.comment, color: "#7688a1" },
   { tag: tags.keyword, color: "#c8a2f0" },
   { tag: tags.string, color: "#b5d892" },
   { tag: tags.number, color: "#e1b57a" },
@@ -91,6 +91,8 @@ export function createEditor(parent, source, onChange, onRun) {
           "aria-label": "Verse source code",
           "aria-describedby": "edit-state",
           spellcheck: "false",
+          // already focusable (contenteditable); explicit for axe and assistive tech
+          tabindex: "0",
         }),
         EditorView.theme(
           {
