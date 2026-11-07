@@ -89,6 +89,7 @@ export function createEditor(parent, source, onChange, onRun) {
         EditorState.tabSize.of(4),
         EditorView.contentAttributes.of({
           "aria-label": "Verse source code",
+          "aria-describedby": "edit-state",
           spellcheck: "false",
         }),
         EditorView.theme(

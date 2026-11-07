@@ -23,8 +23,12 @@
       <span class="header-divider"></span
       ><span class="tagline">STEP INSIDE YOUR VERSE.</span>
       <div class="top-right">
-        <a class="toy-link" href="https://rudi-cilibrasi.github.io/openverse-docs/demo/"
-          title="Use the same Verse language with text input and output">Text playground ↗</a>
+        <a
+          class="toy-link"
+          href="https://rudi-cilibrasi.github.io/openverse-docs/demo/"
+          title="Use the same Verse language with text input and output"
+          >Text playground ↗</a
+        >
         <span class="local-badge"><i></i> LOCAL PLAYGROUND</span
         ><button id="help" class="quiet-button">
           How to play <span>?</span>
@@ -62,6 +66,10 @@
           <span class="single-player">♙ &nbsp; 1 PLAYER + BOTS</span>
         </div>
         <div class="map-tabs" role="group" aria-label="Starter islands"></div>
+        <div id="pending-edits" class="pending-edits" role="status" hidden>
+          <span id="pending-message">Your edits aren't running yet.</span>
+          <button id="apply-edits">Apply edits &amp; restart</button>
+        </div>
         <section class="game-panel" aria-label="Playable 3D map">
           <div
             id="viewport"
@@ -125,7 +133,7 @@
             ><button
               id="restart"
               class="world-control"
-              title="Restart this map"
+              title="Restart this map; pending edits will be applied"
               aria-label="Restart map"
             >
               ↻
@@ -162,10 +170,13 @@
         </section>
         <aside class="language-bridge" aria-label="Two ways to learn Verse">
           <strong>Same Verse. A different canvas.</strong>
-          <p>Explore values, loops, and conditions in the
-            <a href="https://rudi-cilibrasi.github.io/openverse-docs/demo/">text playground</a>,
-            then use the same ideas to change this island. Each toy has its own
-            examples and API.</p>
+          <p>
+            Explore values, loops, and conditions in the
+            <a href="https://rudi-cilibrasi.github.io/openverse-docs/demo/"
+              >text playground</a
+            >, then use the same ideas to change this island. Each toy has its
+            own examples and API.
+          </p>
         </aside>
         <section class="trace-panel">
           <div class="trace-header">
@@ -183,7 +194,13 @@
       <section class="editor-column" aria-label="Verse code editor">
         <div class="editor-top">
           <span class="file-tab"
-            ><span>V</span> island.verse <i id="dirty" hidden></i></span
+            ><span>V</span> island.verse
+            <i
+              id="dirty"
+              role="img"
+              aria-label="Unapplied edits"
+              hidden
+            ></i></span
           ><span class="language-label">VERSE</span
           ><button
             id="source-import"
@@ -209,19 +226,23 @@
             <strong>Your code. Your island.</strong
             ><button id="restore-example">Restore starter</button>
           </div>
-          <p>Edit a value or rewrite the rules. Then bring it to life.</p>
+          <p>Edit a value or rewrite the rules, then apply your edits below.</p>
         </div>
-        <div id="editor" aria-label="Verse source code"></div>
-        <div id="diagnostic" class="diagnostic" role="alert" hidden></div>
         <div class="compile-bar">
           <div>
             <span id="compile-status" role="status">Starting compiler…</span
             ><small id="artifact-info">Verse → OVBC → linked WebAssembly</small>
           </div>
           <button id="compile" disabled>
-            ▶ &nbsp;Compile & play <kbd>⌘ ↵</kbd>
+            <span id="compile-label">Apply edits &amp; restart</span>
+            <kbd>⌘ / Ctrl ↵</kbd>
           </button>
+          <p id="edit-state">
+            Edits take effect when you apply them. Applying restarts the island.
+          </p>
         </div>
+        <div id="diagnostic" class="diagnostic" role="alert" hidden></div>
+        <div id="editor" aria-label="Verse source code"></div>
         <div class="editor-footer">
           <span><i></i> Runs in your browser</span
           ><button id="wasm-download" disabled>Download .wasm ↓</button>

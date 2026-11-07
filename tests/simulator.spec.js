@@ -108,6 +108,85 @@ test("real WASM artifact embeds edited Verse, executes independently, and keyboa
   expect(errors).toEqual([]);
 });
 
+test("edits are visibly pending and the restart circle applies a changed gate handler", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await ready(page);
+  const action = await page.locator("#compile").boundingBox();
+  const code = await page.locator("#editor").boundingBox();
+  expect(action.y + action.height).toBeLessThan(720);
+  expect(action.y).toBeLessThan(code.y);
+
+  const source = await page.evaluate(() => window.overfort.source());
+  await moveToY(page, 6.8);
+  await page.keyboard.press("e");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => overfort.snapshot().objects.find((o) => o.id === "gate").z,
+      ),
+    )
+    .toBeGreaterThan(4.2);
+
+  const closed = source
+    .replace(
+      'MoveTo("gate", 0, -350, GateHeight + 40, 1200)',
+      '# MoveTo("gate", 0, -350, GateHeight + 40, 1200)',
+    )
+    .replace("Gate open! Step into the garden.", "The gate stays closed.");
+  await setSource(page, closed);
+  await expect(page.locator("#pending-edits")).toBeVisible();
+  await expect(page.locator("#compile-status")).toHaveText("Edits not applied");
+  await expect(page.locator("#dirty")).toBeVisible();
+
+  // This is the control the user tried: it must apply the draft, not reset the old VM.
+  await page.locator("#restart").click();
+  await expect(page.locator("#compile")).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator("#pending-edits")).toBeHidden();
+  await expect(page.locator("#dirty")).toBeHidden();
+  expect(await page.evaluate(() => overfort.snapshot().compiledSource)).toBe(
+    closed,
+  );
+  await moveToY(page, 6.8);
+  await page.keyboard.press("e");
+  await expect(page.locator("#message")).toHaveText("The gate stays closed.");
+  expect(
+    await page.evaluate(
+      () => overfort.snapshot().objects.find((o) => o.id === "gate").z,
+    ),
+  ).toBe(0);
+
+  await setSource(
+    page,
+    closed.replace("GateHeight:int = 420", "GateHeight:int = UnknownHeight"),
+  );
+  await page.locator("#apply-edits").click();
+  await expect(page.locator("#compile")).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator("#diagnostic")).toContainText("UnknownHeight");
+  await expect(page.locator("#pending-edits")).toContainText(
+    "previous map is still running",
+  );
+  expect(await page.evaluate(() => overfort.snapshot().compiledSource)).toBe(
+    closed,
+  );
+
+  // Applying a second valid edit changes the handler back again.
+  await setSource(page, source);
+  await compile(page);
+  await expect(page.locator("#pending-edits")).toBeHidden();
+  await expect(page.locator("#diagnostic")).toBeHidden();
+  await moveToY(page, 6.8);
+  await page.keyboard.press("e");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => overfort.snapshot().objects.find((o) => o.id === "gate").z,
+      ),
+    )
+    .toBeGreaterThan(4.2);
+});
+
 test("all starter maps compile, loop creates course, jump/launch and real aiming run in the browser", async ({
   page,
 }) => {

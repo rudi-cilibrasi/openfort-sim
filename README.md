@@ -60,11 +60,15 @@ workflow reports the setup link and still validates the source build.
 - **Drag:** turn the camera. **Scroll:** zoom. **Click:** fire at a bot or target.
 - **E:** interact with the nearest button. Purple circles are trigger zones;
   green crystals are collectibles. Touch controls appear on small screens.
-- Import a custom `.verse` file with the ↑ button, or edit `island.verse`, then **Compile & play** or Ctrl/⌘+Enter. The map restarts
-  from your new code. Invalid source leaves the previous map playable.
+- Import a custom `.verse` file with the ↑ button, or edit `island.verse`, then
+  **Apply edits & restart** above the editor, above the map, or with Ctrl/⌘+Enter.
+  The orange dot and notice mean the draft is not running yet. Applying compiles
+  the new code and restarts the map. A failed apply shows its error above the
+  editor and clearly marks that the previous map is still running.
 - **Inspect objects** and click a world object to reveal its Verse declaration.
   Event-trace entries reveal handler lines when `Trace` is used.
-- **Restart** clears score and event history. Source edits save separately for
+- The **restart circle** also applies pending edits. With no edits, it clears
+  score and event history. Source edits save separately for
   each example in this browser. Export source or the compiled `map.wasm`.
 
 The [examples/](examples/) directory contains the actual `.verse` source files for all three starter maps:

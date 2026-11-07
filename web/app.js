@@ -21,6 +21,8 @@ let worker,
   sequence = 0,
   pending = new Map(),
   compiling = false,
+  lastApplyFailed = false,
+  lastCompileStatus = "Starting compiler…",
   compiledSource = "",
   wasm = null,
   applied = 0,
@@ -34,6 +36,48 @@ const escape = (s) =>
         c
       ],
   );
+function hasPendingEdits() {
+  return editor && editor.get() !== compiledSource;
+}
+function setText(selector, text) {
+  const element = $(selector);
+  if (element.textContent !== text) element.textContent = text;
+}
+function syncEditStatus() {
+  const dirty = hasPendingEdits();
+  $("#dirty").hidden = !dirty;
+  $("#pending-edits").hidden = !world?.ready || !(dirty || lastApplyFailed);
+  $("#pending-edits").dataset.state = lastApplyFailed ? "error" : "pending";
+  setText(
+    "#pending-message",
+    compiling
+      ? "Applying your edits and restarting the island…"
+      : lastApplyFailed
+        ? "Edits weren't applied. The previous map is still running; check the error above the editor."
+        : "Your edits aren't running yet. Apply them to change the map.",
+  );
+  setText("#compile-label", compiling ? "Applying…" : "Apply edits & restart");
+  $("#apply-edits").disabled = compiling;
+  $("#restart").disabled = compiling;
+  $("#restart").title = dirty
+    ? "Apply pending edits and restart the map"
+    : "Restart the current map";
+  $("#restart").setAttribute(
+    "aria-label",
+    dirty ? "Apply edits and restart map" : "Restart map",
+  );
+  if (!compiling)
+    setText(
+      "#compile-status",
+      lastApplyFailed
+        ? world?.ready
+          ? "Apply failed · previous map running"
+          : "Could not apply edits"
+        : dirty
+          ? "Edits not applied"
+          : lastCompileStatus,
+    );
+}
 function addTrace(text, kind = "reaction", line) {
   if (!traceCount) $("#trace").textContent = "";
   traceCount++;
@@ -233,12 +277,14 @@ function applyBatch(batch) {
 async function compile() {
   if (compiling) return;
   compiling = true;
+  lastApplyFailed = false;
   world.active = false;
   $("#compile").disabled = true;
   $("#diagnostic").hidden = true;
   $("#victory").hidden = true;
   const source = editor.get();
   const start = performance.now();
+  syncEditStatus();
   if (!world.ready) $("#loading").hidden = false;
   try {
     startWorker();
@@ -254,10 +300,8 @@ async function compile() {
     }
     wasm = result.wasm;
     compiledSource = source;
-    $("#dirty").hidden = editor.get() === compiledSource;
     $("#wasm-download").disabled = false;
-    $("#compile-status").textContent =
-      `Compiled · ${((performance.now() - start) / 1000).toFixed(2)}s`;
+    lastCompileStatus = `Compiled · ${((performance.now() - start) / 1000).toFixed(2)}s`;
     $("#artifact-info").textContent =
       `map.wasm · ${(wasm.length / 1024).toFixed(1)} KB`;
     addTrace(
@@ -265,12 +309,14 @@ async function compile() {
     );
     world.active = true;
   } catch (err) {
+    lastApplyFailed = true;
     showError(err.message);
     world.active = world.ready;
   } finally {
     compiling = false;
     $("#compile").disabled = false;
     $("#loading").hidden = true;
+    syncEditStatus();
   }
 }
 let eventChain = Promise.resolve();
@@ -406,16 +452,25 @@ try {
     sourceFor(selected),
     (source) => {
       save("source:" + selected, source);
-      $("#dirty").hidden = source === compiledSource;
+      if (source === compiledSource) {
+        lastApplyFailed = false;
+        $("#diagnostic").hidden = true;
+      }
+      syncEditStatus();
     },
     compile,
   );
   renderTabs();
   $("#lesson-text").textContent = examples[selected].lesson;
   $("#compile").onclick = compile;
+  $("#apply-edits").onclick = compile;
   $("#compile").disabled = false;
   $("#restart").onclick = async () => {
-    if (compiling || !worker) return;
+    if (compiling) return;
+    if (hasPendingEdits() || !worker) {
+      await compile();
+      return;
+    }
     try {
       const result = await request("reset");
       const batches = parseOutput(result.output);
@@ -428,7 +483,10 @@ try {
         applied++;
       }
       addTrace("Session restarted");
+      lastApplyFailed = false;
+      $("#diagnostic").hidden = true;
       world.active = true;
+      syncEditStatus();
     } catch (err) {
       showError(err.message);
     }
@@ -442,7 +500,7 @@ try {
       return;
     }
     editor.set(await file.text());
-    $("#compile-status").textContent = "Imported · compile to play";
+    $("#compile-status").textContent = "Imported · apply edits to play";
     addTrace(`Imported ${file.name}`);
     e.target.value = "";
   };
@@ -459,7 +517,7 @@ try {
   };
   $("#help").onclick = () =>
     modal(
-      `<h2>Step inside your code.</h2><p>Choose an island, edit its Verse source, and click <strong>Compile &amp; play</strong> (Ctrl/⌘ + Enter). Your program compiles and runs locally in WebAssembly.</p><ol><li>Click the world to focus it. Use <strong>WASD</strong> or arrow keys to move, <strong>Space</strong> to jump, and <strong>Shift</strong> to sprint.</li><li>Drag the world to turn the camera. Scroll to zoom. Click a target or bot to fire.</li><li>Walk close to an amber button and press <strong>E</strong>. Purple rings fire trigger events when you enter or leave. Green crystals fire collection events.</li><li>Watch the event trace. Select an entry with a line number to reveal its handler. Enable <strong>Inspect objects</strong>, then click an object to find its declaration.</li><li>Edit a value or add a rule, then compile again. Restart resets the current game. Source edits save automatically on this browser.</li></ol><p>On a touch screen, drag to look and use the on-screen movement buttons. Downloads let you save your Verse and executable <code>map.wasm</code>.</p>`,
+      `<h2>Step inside your code.</h2><p>Choose an island, edit its Verse source, and click <strong>Apply edits &amp; restart</strong> above the editor (Ctrl/⌘ + Enter). Your program compiles and runs locally in WebAssembly.</p><ol><li>Click the world to focus it. Use <strong>WASD</strong> or arrow keys to move, <strong>Space</strong> to jump, and <strong>Shift</strong> to sprint.</li><li>Drag the world to turn the camera. Scroll to zoom. Click a target or bot to fire.</li><li>Walk close to an amber button and press <strong>E</strong>. Purple rings fire trigger events when you enter or leave. Green crystals fire collection events.</li><li>Watch the event trace. Select an entry with a line number to reveal its handler. Enable <strong>Inspect objects</strong>, then click an object to find its declaration.</li><li>After editing, the notice above the map tells you the edits are not running yet. Apply them there or above the editor. The restart circle also applies pending edits. If applying fails, the error stays visible and the previous map continues to run.</li></ol><p>Source edits save automatically on this browser. On a touch screen, drag to look and use the on-screen movement buttons. Downloads let you save your Verse and executable <code>map.wasm</code>.</p>`,
     );
   $("#limitations").onclick = () => modal(scope);
   $("#api-nav").onclick = apiModal;

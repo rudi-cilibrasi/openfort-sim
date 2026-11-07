@@ -8,7 +8,7 @@ export const examples = {
     tag: "DEVICES & EVENTS",
     description: "A button, a barrier, and a little cause and effect.",
     lesson:
-      "Change GateHeight or Reward, then compile. Walk to the amber button and press E. The OnEvent handler opens the gate and awards points.",
+      "Change GateHeight or Reward, then apply your edits. To keep the gate closed, comment out MoveTo in OnEvent and apply again. Walk to the amber button and press E to try your rule.",
     source: islandSource,
   },
   parkour: {
