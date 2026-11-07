@@ -1,0 +1,19 @@
+# Keep the workflow's actions and the npm dependencies (Vite, Three.js,
+# Playwright) current. Updates come grouped: one pull request each a week.
+# The vendored compiler and VM (vendor/sources.json) are updated by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
