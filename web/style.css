@@ -145,7 +145,7 @@ a {
   gap: 7px;
   width: 60px;
   padding: 12px 0;
-  color: #69778e;
+  color: #758197;
   font-size: 23px;
   border-radius: 8px;
 }
@@ -166,7 +166,7 @@ a {
   padding-top: 50px;
   text-align: center;
   font-size: 8px;
-  color: #4e5b73;
+  color: #788294;
   line-height: 1.8;
   letter-spacing: 1.4px;
 }
@@ -630,7 +630,7 @@ kbd {
   background: #b6ed5d;
 }
 .trace-header small {
-  color: #4e6079;
+  color: #768497;
   font-size: 7px;
   letter-spacing: 1px;
   margin-left: 8px;
@@ -659,7 +659,7 @@ kbd {
   white-space: pre-wrap;
 }
 .trace-row time {
-  color: #485e77;
+  color: #738497;
   font-size: 9px;
 }
 .trace-row .event {
@@ -722,7 +722,7 @@ kbd {
 }
 .language-label {
   margin-left: auto;
-  color: #4d5d74;
+  color: #7e8a9a;
   letter-spacing: 1px;
   font-size: 7px;
 }
@@ -769,7 +769,7 @@ kbd {
 }
 #editor .cm-gutters {
   background: transparent;
-  color: #45516a;
+  color: #7c8596;
   border: none;
   padding-right: 7px;
 }
@@ -842,7 +842,7 @@ kbd {
 }
 #artifact-info {
   font-size: 8px;
-  color: #697b93;
+  color: #7c8ca1;
 }
 .compile-bar > button {
   width: 100%;
@@ -871,7 +871,7 @@ kbd {
   align-items: center;
   padding: 12px 17px;
   font-size: 8px;
-  color: #61728a;
+  color: #78879b;
   border-top: 1px solid #ffffff08;
   gap: 6px;
 }
@@ -913,13 +913,13 @@ kbd {
   padding: 0 25px;
   font-size: 7px;
   letter-spacing: 0.6px;
-  color: #55647c;
+  color: #778396;
   gap: 10px;
 }
 .page-footer > span:first-child {
   font-weight: 700;
   letter-spacing: 1.6px;
-  color: #728099;
+  color: #76839c;
 }
 .page-footer button {
   font-size: inherit;
