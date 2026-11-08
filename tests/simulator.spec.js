@@ -422,6 +422,26 @@ test("maps compute with floats and pass rounded results to the integer API", asy
   ).toBeCloseTo(4.24, 6);
 });
 
+test("maps cannot use concurrency: a <suspends> handler is refused, as the scope says", async ({
+  page,
+}) => {
+  await ready(page);
+  await setSource(
+    page,
+    `island := class(creative_device):
+    OnBegin<override>():void =
+        World("Waiting island")
+    OnEvent<override>(Event:string)<suspends>:void =
+        Sleep(1.0)
+`,
+  );
+  await compile(page);
+  await expect(page.locator("#diagnostic")).toContainText(
+    "must not be <suspends>",
+  );
+  await expect(page.locator("#map-name")).toHaveText("Switchback Island");
+});
+
 test("only edited maps are saved: opening a map or restoring its starter saves nothing", async ({
   page,
 }) => {
