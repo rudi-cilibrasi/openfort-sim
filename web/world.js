@@ -1,4 +1,39 @@
-import * as THREE from "three";
+import {
+  ACESFilmicToneMapping,
+  BoxGeometry,
+  BufferGeometry,
+  CanvasTexture,
+  CircleGeometry,
+  Color,
+  ConeGeometry,
+  CylinderGeometry,
+  DirectionalLight,
+  DodecahedronGeometry,
+  DoubleSide,
+  Float32BufferAttribute,
+  Fog,
+  Group,
+  HemisphereLight,
+  IcosahedronGeometry,
+  Line,
+  LineBasicMaterial,
+  MathUtils,
+  Mesh,
+  MeshStandardMaterial,
+  OctahedronGeometry,
+  PCFShadowMap,
+  PerspectiveCamera,
+  PlaneGeometry,
+  Raycaster,
+  Scene,
+  Sprite,
+  SpriteMaterial,
+  SRGBColorSpace,
+  TorusGeometry,
+  Vector2,
+  Vector3,
+  WebGLRenderer,
+} from "three";
 
 const COLORS = {
   grass: 0x7db653,
@@ -15,17 +50,30 @@ const color = (value) =>
   (/^#[0-9a-f]{6}$/i.test(value)
     ? Number.parseInt(value.slice(1), 16)
     : COLORS.stone);
+// Named imports, and this table instead of a lookup by name in the whole
+// module, let the bundler leave out the parts of three.js that are not used.
+const GEOMETRIES = {
+  BoxGeometry,
+  CircleGeometry,
+  ConeGeometry,
+  CylinderGeometry,
+  DodecahedronGeometry,
+  IcosahedronGeometry,
+  OctahedronGeometry,
+  PlaneGeometry,
+  TorusGeometry,
+};
 const geometryCache = new Map();
 function geom(type, ...sizes) {
   const key = type + sizes.join(",");
   if (!geometryCache.has(key))
-    geometryCache.set(key, new THREE[type](...sizes));
+    geometryCache.set(key, new GEOMETRIES[type](...sizes));
   return geometryCache.get(key);
 }
 function mesh(type, sizes, tint, roughness = 0.85) {
-  const obj = new THREE.Mesh(
+  const obj = new Mesh(
     geom(type, ...sizes),
-    new THREE.MeshStandardMaterial({
+    new MeshStandardMaterial({
       color: tint,
       roughness,
       flatShading: true,
@@ -41,7 +89,7 @@ function box(w, h, d, tint, x = 0, y = 0, z = 0) {
   return m;
 }
 function tree(scale = 1) {
-  const g = new THREE.Group();
+  const g = new Group();
   g.add(box(0.35, 2.1, 0.35, 0x785e40, 0, 1, 0));
   for (let i = 0; i < 3; i++) {
     const m = mesh(
@@ -56,7 +104,7 @@ function tree(scale = 1) {
   return g;
 }
 function character(tint = 0x61c6d4) {
-  const g = new THREE.Group();
+  const g = new Group();
   const body = box(0.58, 0.65, 0.32, tint, 0, 1.1, 0);
   g.add(body);
   g.add(box(0.39, 0.39, 0.39, 0xe3b787, 0, 1.65, 0));
@@ -87,11 +135,9 @@ function label(text) {
   c.font = "bold 28px system-ui";
   c.textAlign = "center";
   c.fillText(text.slice(0, 30), 256, 60);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  const s = new THREE.Sprite(
-    new THREE.SpriteMaterial({ map: texture, depthTest: false }),
-  );
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  const s = new Sprite(new SpriteMaterial({ map: texture, depthTest: false }));
   s.scale.set(2.6, 0.51, 1);
   return s;
 }
@@ -110,29 +156,29 @@ export class World {
     this.pitch = 0.32;
     this.distance = 5.6;
     this.velocity = 0;
-    this.pos = new THREE.Vector3(0, 0, 13);
+    this.pos = new Vector3(0, 0, 13);
     this.eventPending = new Set();
     this.inside = new Set();
     this.elapsed = 0;
     this.renderedFrames = 0;
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xaad3df);
-    this.scene.fog = new THREE.Fog(0xaad3df, 42, 145);
-    this.camera = new THREE.PerspectiveCamera(58, 1, 0.1, 250);
-    this.renderer = new THREE.WebGLRenderer({
+    this.scene = new Scene();
+    this.scene.background = new Color(0xaad3df);
+    this.scene.fog = new Fog(0xaad3df, 42, 145);
+    this.camera = new PerspectiveCamera(58, 1, 0.1, 250);
+    this.renderer = new WebGLRenderer({
       antialias: true,
       alpha: false,
       powerPreference: "high-performance",
     });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoftShadowMap was removed in three r187
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.shadowMap.type = PCFShadowMap; // PCFSoftShadowMap was removed in three r187
+    this.renderer.outputColorSpace = SRGBColorSpace;
+    this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.25;
     container.appendChild(this.renderer.domElement);
-    this.scene.add(new THREE.HemisphereLight(0xd5efff, 0x738f50, 2.7));
-    const sun = new THREE.DirectionalLight(0xffefcf, 3.1);
+    this.scene.add(new HemisphereLight(0xd5efff, 0x738f50, 2.7));
+    const sun = new DirectionalLight(0xffefcf, 3.1);
     sun.position.set(-20, 35, 20);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -144,7 +190,7 @@ export class World {
     sun.shadow.bias = -0.0001;
     this.scene.add(sun);
     this.environment();
-    this.mapGroup = new THREE.Group();
+    this.mapGroup = new Group();
     this.scene.add(this.mapGroup);
     this.player = character();
     this.scene.add(this.player);
@@ -207,7 +253,7 @@ export class World {
     }
     this.clouds = [];
     for (let i = 0; i < 12; i++) {
-      const g = new THREE.Group();
+      const g = new Group();
       for (let j = 0; j < 4; j++) {
         const m = mesh("IcosahedronGeometry", [2.6 + j * 0.4, 0], 0xf1f3e8);
         m.castShadow = false;
@@ -240,7 +286,7 @@ export class World {
         dy = e.clientY - drag.y;
       drag.moved += Math.abs(dx) + Math.abs(dy);
       this.yaw -= dx * 0.006;
-      this.pitch = THREE.MathUtils.clamp(this.pitch + dy * 0.004, -0.08, 1);
+      this.pitch = MathUtils.clamp(this.pitch + dy * 0.004, -0.08, 1);
       drag.x = e.clientX;
       drag.y = e.clientY;
     });
@@ -256,7 +302,7 @@ export class World {
       "wheel",
       (e) => {
         e.preventDefault();
-        this.distance = THREE.MathUtils.clamp(
+        this.distance = MathUtils.clamp(
           this.distance + e.deltaY * 0.008,
           2.5,
           11,
@@ -333,7 +379,7 @@ export class World {
     text = "",
   ) {
     if (this.objects.has(id)) throw new Error(`Duplicate object ID: ${id}`);
-    const g = new THREE.Group();
+    const g = new Group();
     const c = color(tint);
     let collider = [
       "floor",
@@ -482,7 +528,7 @@ export class World {
       collider = false;
     } else if (kind === "ramp") {
       // A wedge whose top rises toward -Y (the forward direction).
-      const geo = new THREE.BufferGeometry();
+      const geo = new BufferGeometry();
       const a = [
         -w / 2,
         0,
@@ -539,13 +585,13 @@ export class World {
         0,
         -d / 2,
       ];
-      geo.setAttribute("position", new THREE.Float32BufferAttribute(a, 3));
+      geo.setAttribute("position", new Float32BufferAttribute(a, 3));
       geo.computeVertexNormals();
-      const m = new THREE.Mesh(
+      const m = new Mesh(
         geo,
-        new THREE.MeshStandardMaterial({
+        new MeshStandardMaterial({
           color: c,
-          side: THREE.DoubleSide,
+          side: DoubleSide,
           flatShading: true,
         }),
       );
@@ -571,7 +617,7 @@ export class World {
       d,
       h,
       collider,
-      home: new THREE.Vector3(x, z, y),
+      home: new Vector3(x, z, y),
       radius: w,
       label: text,
       behavior: tint,
@@ -594,16 +640,14 @@ export class World {
         this.camera.position
           .copy(this.pos)
           .add(
-            new THREE.Vector3(
+            new Vector3(
               0,
               2.6 + Math.sin(this.pitch) * this.distance,
               this.distance,
             ),
           );
         this.camera.lookAt(
-          this.pos
-            .clone()
-            .add(new THREE.Vector3(0, 1.5 - this.pitch * 0.5, -1.7)),
+          this.pos.clone().add(new Vector3(0, 1.5 - this.pitch * 0.5, -1.7)),
         );
         this.camera.updateMatrixWorld();
         break;
@@ -644,7 +688,7 @@ export class World {
         if (o) {
           o.motion = {
             from: o.group.position.clone(),
-            to: new THREE.Vector3(n(1), n(3), n(2)),
+            to: new Vector3(n(1), n(3), n(2)),
             start: this.elapsed,
             duration: Math.max(0.01, Number(v[4]) / 1000),
           };
@@ -679,18 +723,17 @@ export class World {
     if (o.kind === "ramp")
       return (
         o.group.position.y +
-        o.h *
-          THREE.MathUtils.clamp((o.group.position.z + o.d / 2 - z) / o.d, 0, 1)
+        o.h * MathUtils.clamp((o.group.position.z + o.d / 2 - z) / o.d, 0, 1)
       );
     return o.group.position.y + o.h;
   }
   updatePlayer(dt) {
-    const input = new THREE.Vector3();
+    const input = new Vector3();
     if (this.keys.has("KeyW") || this.keys.has("ArrowUp")) input.z -= 1;
     if (this.keys.has("KeyS") || this.keys.has("ArrowDown")) input.z += 1;
     if (this.keys.has("KeyA") || this.keys.has("ArrowLeft")) input.x -= 1;
     if (this.keys.has("KeyD") || this.keys.has("ArrowRight")) input.x += 1;
-    input.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+    input.normalize().applyAxisAngle(new Vector3(0, 1, 0), this.yaw);
     const speed =
       this.keys.has("ShiftLeft") || this.keys.has("ShiftRight") ? 8 : 5.4;
     let floor = 0;
@@ -763,7 +806,7 @@ export class World {
       Math.abs(this.pos.x) > 38 ||
       Math.abs(this.pos.z) > 38
     ) {
-      this.pos.copy(this.spawn ?? new THREE.Vector3(0, 0, 13));
+      this.pos.copy(this.spawn ?? new Vector3(0, 0, 13));
       this.velocity = 0;
       this.callbacks.message?.("Back on the island. Keep experimenting.");
     }
@@ -778,11 +821,11 @@ export class World {
             ? Math.sin(this.elapsed * 12 + i * Math.PI) * 0.55
             : 0),
     );
-    const target = this.pos.clone().add(new THREE.Vector3(0, 1.5, 0));
+    const target = this.pos.clone().add(new Vector3(0, 1.5, 0));
     const cameraPosition = target
       .clone()
       .add(
-        new THREE.Vector3(
+        new Vector3(
           Math.sin(this.yaw) * this.distance,
           1.1 + Math.sin(this.pitch) * this.distance,
           Math.cos(this.yaw) * this.distance,
@@ -790,7 +833,7 @@ export class World {
       );
     // Pull the third-person camera in when a solid object is behind the player.
     const delta = cameraPosition.clone().sub(target);
-    const ray = new THREE.Raycaster(
+    const ray = new Raycaster(
       target,
       delta.clone().normalize(),
       0.1,
@@ -812,7 +855,7 @@ export class World {
       target
         .clone()
         .add(
-          new THREE.Vector3(
+          new Vector3(
             -Math.sin(this.yaw) * 1.7,
             -this.pitch * 0.5,
             -Math.cos(this.yaw) * 1.7,
@@ -827,7 +870,7 @@ export class World {
       if (!o.group.visible) continue;
       const p = o.group.position;
       if (o.motion) {
-        const t = THREE.MathUtils.clamp(
+        const t = MathUtils.clamp(
           (this.elapsed - o.motion.start) / o.motion.duration,
           0,
           1,
@@ -893,11 +936,11 @@ export class World {
   }
   rayAt(e) {
     const r = this.container.getBoundingClientRect();
-    const xy = new THREE.Vector2(
+    const xy = new Vector2(
       ((e.clientX - r.left) / r.width) * 2 - 1,
       -((e.clientY - r.top) / r.height) * 2 + 1,
     );
-    const ray = new THREE.Raycaster();
+    const ray = new Raycaster();
     ray.setFromCamera(xy, this.camera);
     return ray;
   }
@@ -926,12 +969,12 @@ export class World {
   shoot(e) {
     if (!this.ready) return;
     const hit = this.hitObject(e);
-    const point = hit?.point ?? this.rayAt(e).ray.at(35, new THREE.Vector3());
-    const from = this.pos.clone().add(new THREE.Vector3(0.4, 1.2, 0));
-    const geo = new THREE.BufferGeometry().setFromPoints([from, point]);
-    const line = new THREE.Line(
+    const point = hit?.point ?? this.rayAt(e).ray.at(35, new Vector3());
+    const from = this.pos.clone().add(new Vector3(0.4, 1.2, 0));
+    const geo = new BufferGeometry().setFromPoints([from, point]);
+    const line = new Line(
       geo,
-      new THREE.LineBasicMaterial({
+      new LineBasicMaterial({
         color: 0xfff2aa,
         transparent: true,
         opacity: 0.9,
