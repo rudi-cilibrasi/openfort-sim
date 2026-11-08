@@ -392,3 +392,32 @@ test("imported custom Verse changes geometry and failed conditions roll back WAS
   await expect(page.locator("#compile")).toBeEnabled();
   await expect(page.locator("#map-name")).toHaveText("Switchback Island");
 });
+
+test("maps compute with floats and pass rounded results to the integer API", async ({
+  page,
+}) => {
+  await ready(page);
+  await setSource(
+    page,
+    `island := class(creative_device):
+    OnBegin<override>():void =
+        World("Float island")
+        PlayerSpawn(0, 300, 0)
+        Side:float = Sqrt(2.0) * 300.0
+        if (W := Round[Side]):
+            Prop("block", "crate", 400, 0, 0, W, 200, 200, "cyan")
+            Message("{Side} rounds to {W}")
+`,
+  );
+  await compile(page);
+  await expect(page.locator("#map-name")).toHaveText("Float island");
+  await expect(page.locator("#message")).toContainText(
+    "424.26406871192853 rounds to 424",
+  );
+  expect(
+    await page.evaluate(
+      () =>
+        window.openfort.snapshot().objects.find((o) => o.id === "block").width,
+    ),
+  ).toBeCloseTo(4.24, 6);
+});

@@ -140,7 +140,7 @@ island := class(creative_device):
             set Opened = true
             Hide("wall")
             Score(Reward)
-            Message("That reaction ran in WebAssembly!")
+            Message("The wall is open.")
 ```
 
 All coordinates and dimensions are **integer centimeters**. X goes right, Y
@@ -154,11 +154,16 @@ This is an independent educational simulator, **not a Fortnite client or UEFN**.
 It runs custom maps written against this toy's API and the pinned OpenVerse
 subset. It cannot import arbitrary Epic maps, assets, or UEFN device SDK code.
 
-The subset supports integers, strings, arrays, classes, mutable fields, loops,
-conditions, failure contexts, and transactional rollback. It does not support
-floats, Epic's `@editable` attributes, `Subscribe` callbacks, `spawn`, `Sleep`,
-concurrency, or the Fortnite device SDK. `OnEvent(Event:string)` is this toy's
-explicit event-routing API, not a claim of Epic API compatibility.
+Maps can use everything the pinned OpenVerse compiles: integers, floats and
+exact rationals, strings, arrays, classes and interfaces, generics, modules,
+mutable fields, loops, failure contexts, and transactional rollback. OpenVerse's
+[LANGUAGE.md](https://github.com/rudi-cilibrasi/openverse/blob/main/docs/LANGUAGE.md)
+is the full list. The simulator API itself takes integer centimeters, so pass a
+float through `Round[…]` or `Floor[…]` first. There is no concurrency (`spawn`,
+`Sleep`, `<suspends>`): each handler runs to completion. Epic's `@editable`
+attributes, `Subscribe` callbacks and the Fortnite device SDK are outside this
+toy. `OnEvent(Event:string)` is this toy's explicit event-routing API, not a
+claim of Epic API compatibility.
 
 Physics use simple collisions and ramps on a flat island. Bots support local
 patrol, wander, and idle behaviors; hit detection is a ray cast, with no
