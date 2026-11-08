@@ -421,3 +421,68 @@ test("maps compute with floats and pass rounded results to the integer API", asy
     ),
   ).toBeCloseTo(4.24, 6);
 });
+
+test("only edited maps are saved: opening a map or restoring its starter saves nothing", async ({
+  page,
+}) => {
+  await ready(page);
+  const saved = (map) =>
+    page.evaluate((m) => localStorage.getItem("openfort:source:" + m), map);
+  await page.locator('[data-map="parkour"]').click();
+  await expect(page.locator("#compile")).toBeEnabled();
+  await expect(page.locator("#map-name")).toHaveText("Skyline Sprint");
+  expect(await saved("parkour")).toBeNull();
+  const starter = fs.readFileSync("examples/skyline-sprint.verse", "utf8");
+  const edited = starter.replace("Steps:int = 6", "Steps:int = 8");
+  await setSource(page, edited);
+  expect(await saved("parkour")).toBe(edited);
+  await page.locator("#restore-example").click();
+  await expect(page.locator("#compile")).toBeEnabled();
+  expect(await page.evaluate(() => openfort.source())).toBe(starter);
+  expect(await saved("parkour")).toBeNull();
+});
+
+test("saved copies of the starter maps before #10 give way to the current maps", async ({
+  page,
+}) => {
+  // Earlier versions saved an unedited starter whenever its tab was opened.
+  const bot = fs.readFileSync("examples/bot-yard.verse", "utf8");
+  const sprint = fs.readFileSync("examples/skyline-sprint.verse", "utf8");
+  const oldBot = bot
+    .replace('click to fire.")', 'click to fire. Every hit runs Verse.")')
+    .replace(
+      'Hit {Hits}/{HitsToWin}.")',
+      'Hit {Hits}/{HitsToWin}. This counter lives in Verse.")',
+    );
+  const oldSprint = sprint.replace(
+    "You made it to the high platform!",
+    "You landed on a Verse-generated platform.",
+  );
+  expect(oldBot).not.toBe(bot);
+  expect(oldSprint).not.toBe(sprint);
+  await page.addInitScript(
+    ([oldBot, oldSprint]) => {
+      if (sessionStorage.getItem("seeded")) return;
+      sessionStorage.setItem("seeded", "1");
+      localStorage.setItem("openfort:selected", "range");
+      localStorage.setItem("openfort:source:range", oldBot);
+      localStorage.setItem("overfort:source:parkour", oldSprint);
+    },
+    [oldBot, oldSprint],
+  );
+  await ready(page);
+  await expect(page.locator("#map-name")).toHaveText("Bot Yard");
+  expect(await page.evaluate(() => openfort.source())).toBe(bot);
+  await page.locator('[data-map="parkour"]').click();
+  await expect(page.locator("#compile")).toBeEnabled();
+  expect(await page.evaluate(() => openfort.source())).toBe(sprint);
+  expect(
+    await page.evaluate(() =>
+      [
+        "openfort:source:range",
+        "openfort:source:parkour",
+        "overfort:source:parkour",
+      ].map((k) => localStorage.getItem(k)),
+    ),
+  ).toEqual([null, null, null]);
+});
