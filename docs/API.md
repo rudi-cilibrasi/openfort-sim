@@ -8,7 +8,8 @@ The API is provided as [Verse source](../web/sim-api.verse).
 All coordinates, dimensions, radii and velocities are integer centimeters
 (or cm/s for LaunchPlayer). X is right, Y is depth, Z is up. A prop's position
 is its bottom center. The playable flat island extends approximately 3,800 cm
-from the origin in each horizontal direction; leaving it respawns the explorer. OnBegin must place all initial map objects.
+from the origin in each horizontal direction; leaving it respawns the explorer.
+OnBegin must place all initial map objects.
 
 | Function                                               | Result                                                                            |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------- |
@@ -44,19 +45,24 @@ command protocol. The renderer inserts text safely with textContent or canvas.
 ## Executing an exported artifact
 
 `map.wasm` embeds the program and VM. Use the matching `map-runtime.js` companion
-from `dist/wasm/` to supply its Emscripten imports and initialize the runtime.
-For Node, save the companion as `.cjs` (the project uses ES modules):
+from `dist/wasm/` (on the published site,
+[sim/wasm/map-runtime.js](https://rudi-cilibrasi.github.io/openverse-docs/sim/wasm/map-runtime.js))
+to supply its Emscripten imports and initialize the runtime. The companion is
+a CommonJS script: in Node, save it as `map-runtime.cjs` beside `map.wasm` and
+load it from an ES module, such as this `run.mjs` (run it with `node run.mjs`):
 
 ```js
-const createRuntime = require("./map-runtime.cjs");
-const fs = require("node:fs");
+import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+
+const createRuntime = createRequire(import.meta.url)("./map-runtime.cjs");
 const vm = await createRuntime({
-  wasmBinary: fs.readFileSync("map.wasm"),
+  wasmBinary: readFileSync("map.wasm"),
   print: console.log,
   printErr: console.error,
 });
 const run = vm.cwrap("map_run", "number", ["string", "number"]);
-const code = run("interact:switch\nenter:garden", 3000000);
+console.log("exit", run("interact:switch\nenter:garden", 3000000));
 ```
 
 Use an empty history to run OnBegin alone. Each invocation has fresh Verse
