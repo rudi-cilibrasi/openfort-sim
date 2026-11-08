@@ -17,7 +17,7 @@ Each toy supplies its own examples and API.
 
 ## Run locally
 
-Requires Node.js 20.19+ or 22.12+ and npm. In this repository:
+Requires Node.js 22.12 or newer (CI uses 24, the current LTS) and npm. In this repository:
 
 ```sh
 npm ci
