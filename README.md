@@ -160,8 +160,9 @@ mutable fields, loops, failure contexts, and transactional rollback. OpenVerse's
 [LANGUAGE.md](https://github.com/rudi-cilibrasi/openverse/blob/main/docs/LANGUAGE.md)
 is the full list. The simulator API itself takes integer centimeters, so pass a
 float through `Round[…]` or `Floor[…]` first. OpenVerse's concurrency
-(`<suspends>`, `Sleep`, `spawn`, `race`, …) is not available to maps: `OnBegin`
-and `OnEvent` are not suspends functions, so each handler runs to completion;
+(`<suspends>`, `Sleep`, `spawn`, `race`, …) does not reach into maps: `OnBegin`,
+`OnEvent` and the host's `Main` are not suspends functions, so each handler runs
+to completion, and a task that a handler spawns stops at its first wait.
 `MoveTo`'s duration gives motion over time. Epic's `@editable`
 attributes, `Subscribe` callbacks and the Fortnite device SDK are outside this
 toy. `OnEvent(Event:string)` is this toy's explicit event-routing API, not a

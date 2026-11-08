@@ -422,7 +422,7 @@ test("maps compute with floats and pass rounded results to the integer API", asy
   ).toBeCloseTo(4.24, 6);
 });
 
-test("maps cannot use concurrency: a <suspends> handler is refused, as the scope says", async ({
+test("concurrency does not reach into maps: a <suspends> handler is refused, a spawned task stops at its first wait", async ({
   page,
 }) => {
   await ready(page);
@@ -440,6 +440,22 @@ test("maps cannot use concurrency: a <suspends> handler is refused, as the scope
     "must not be <suspends>",
   );
   await expect(page.locator("#map-name")).toHaveText("Switchback Island");
+  await setSource(
+    page,
+    `Later()<suspends>:void =
+    Score(5)
+    Sleep(1.0)
+    Score(100)
+
+island := class(creative_device):
+    OnBegin<override>():void =
+        World("Task island")
+        spawn{Later()}
+`,
+  );
+  await compile(page);
+  await expect(page.locator("#map-name")).toHaveText("Task island");
+  await expect(page.locator("#score")).toHaveText("005");
 });
 
 test("only edited maps are saved: opening a map or restoring its starter saves nothing", async ({
