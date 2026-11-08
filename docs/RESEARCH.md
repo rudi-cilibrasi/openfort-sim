@@ -20,8 +20,9 @@ Inspected 7 November 2026, before implementation. Primary sources only.
 4. [Epic: creative_prop](https://dev.epicgames.com/documentation/fortnite/verse-api/fortnitedotcom/devices/creative_prop?lang=en-US)
    documents hiding, showing, and moving props. Our Hide/Show/MoveTo functions
    are deliberately smaller teaching functions. Coordinates follow the cm
-   convention, but duration is integer milliseconds because this OpenVerse
-   compiler does not support floats or suspending functions.
+   convention, but duration is integer milliseconds because the OpenVerse
+   compiler of that date supported neither floats nor suspending functions.
+   (OpenVerse has floats now; the API keeps integers so existing maps still work.)
 5. [Epic: button_device](https://dev.epicgames.com/documentation/en-us/fortnite/verse-api/fortnitedotcom/devices/button_device)
    describes the agent-bearing InteractedWithEvent. Our single-player button
    emits `interact:Id` without an agent argument.
