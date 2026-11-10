@@ -145,6 +145,9 @@ test("real WASM artifact embeds edited Verse, executes independently, and keyboa
 test("edits are visibly pending and the restart circle applies a changed gate handler", async ({
   page,
 }) => {
+  // (two compiles and three walks: up to 2 × 30 s + 3 × 20 s, past the 60 s default on a
+  // loaded machine, where frames, and so the walks, slow down)
+  test.slow();
   await page.setViewportSize({ width: 1280, height: 720 });
   await ready(page);
   const action = await page.locator("#compile").boundingBox();
