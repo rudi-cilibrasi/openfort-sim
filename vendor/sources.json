@@ -1,7 +1,7 @@
 {
   "openverse": {
     "url": "https://github.com/rudi-cilibrasi/openverse.git",
-    "commit": "455def1e9389167ef0ef85b9c80bca5465e00533"
+    "commit": "e12f4ae10ba80e2f8e45452abcb2d748af861652"
   },
   "lean4": {
     "url": "https://github.com/leanprover/lean4.git",
