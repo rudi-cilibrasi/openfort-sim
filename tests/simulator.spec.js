@@ -264,7 +264,7 @@ test("all starter maps compile, loop creates course, jump/launch and real aiming
   await expect(page.locator("#score")).toHaveText("000");
 });
 
-test("compiler diagnostics and bounded loops preserve the previous world, edits persist, and recompilation recovers", async ({
+test("compiler diagnostics and resource limits preserve the previous world, edits persist, and recompilation recovers", async ({
   page,
 }) => {
   await ready(page);
@@ -285,6 +285,23 @@ test("compiler diagnostics and bounded loops preserve the previous world, edits 
   );
   await compile(page);
   await expect(page.locator("#diagnostic")).toContainText("limit");
+  // A shared 2^16 by 2^16 array exceeds wasm32's size_t without large input.
+  await setSource(
+    page,
+    `island := class(creative_device):
+    OnBegin<override>():void =
+        var Xs:[]int = array{1}
+        for (I := 0..15) { set Xs = Xs + Xs }
+        var Groups:[][]int = array{Xs}
+        for (I := 0..15) { set Groups = Groups + Groups }
+        Print("{Concatenate(Groups).Length}")
+`,
+  );
+  await compile(page);
+  await expect(page.locator("#diagnostic")).toContainText("Resource limit: memory");
+  expect(
+    await page.evaluate(() => window.openfort.snapshot().objects.length),
+  ).toBe(10);
   await setSource(
     page,
     source
