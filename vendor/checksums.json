@@ -1,6 +1,6 @@
 {
   "vendor/compiler/compiler.js": "09d29504f407d8ae2e567f78ec5c747b8f3e949a0db466d1252253f0bdf22c93",
-  "vendor/compiler/compiler.wasm": "b896b713c32c696d3b893fa1c1c868fe808704ddb94987c5ca8d41550ef57a56",
+  "vendor/compiler/compiler.wasm": "d2cd31ea5ae5dd0cc58583c3444d38b39062125f1752a702486041023713d8e5",
   "vendor/runtime/map-runtime.js": "4d8dc3ce4f1d3997d71d58237d9a69637b693e94741e9cf8a11815a4c4c0dc32",
-  "vendor/runtime/map-runtime.wasm": "dfec36ccb95fb8d4c35e3ebb87dcae28ad4a5a4102b8209a2eb6ee65a32c9c4b"
+  "vendor/runtime/map-runtime.wasm": "39ab887403457505010a4499944fac475d410f120d2f76a7f9a0acd82461732f"
 }
